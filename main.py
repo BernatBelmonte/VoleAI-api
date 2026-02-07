@@ -2,6 +2,7 @@ import os
 from datetime import date, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -19,6 +20,15 @@ app = FastAPI(
     title="VoleAI API - Padel Pro Analytics",
     description="Advanced API for accessing professional padel data from Premier Padel. Get player stats, match history, tournament info and more! Perfect for building dashboards, apps or doing your own analysis.",
     version="1.1.0"
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 class PlayerStats(BaseModel):
