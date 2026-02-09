@@ -1,11 +1,11 @@
 
-# 🎾 VoleAI API - Padel Data Analytics Engine
+#  VoleAI API - Padel Data Analytics Engine
 
 VoleAI is an advanced analytics engine for professional padel. This API serves as the backbone for the VoleAI platform, processing historical match data, player performance, and pair statistics to provide deep insights, Head-to-Head (H2H) comparisons, and dynamic rankings.
 
 
 
-## 🚀 Tech Stack
+##  Tech Stack
 
 * **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
 * **Database:** [Supabase](https://supabase.com/) (PostgreSQL)
@@ -13,7 +13,7 @@ VoleAI is an advanced analytics engine for professional padel. This API serves a
 * **Deployment:** [Render](https://render.com/)
 * **Data Processing:** Custom ETL pipeline for padel match telemetry.
 
-## 📊 Data Architecture
+##  Data Architecture
 
 The API interacts with five core tables optimized for high-performance analytical queries:
 
