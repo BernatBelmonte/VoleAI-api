@@ -88,7 +88,7 @@ def get_players_ranking(limit: int = 50):
     res = supabase.table("dynamic_players") \
         .select("slug, points, race_position") \
         .eq("snapshot_date", latest_date) \
-        .order("race_position", desc=False) \
+        .order("points", desc=True) \
         .limit(limit) \
         .execute()
     
