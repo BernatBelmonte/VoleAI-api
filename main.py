@@ -86,7 +86,7 @@ def get_players_ranking(limit: int = 50):
     latest_date = latest_date_res.data[0]['snapshot_date']
 
     res = supabase.table("dynamic_players") \
-        .select("slug, points, race_position") \
+        .select("*") \
         .eq("snapshot_date", latest_date) \
         .order("points", desc=True) \
         .limit(limit) \
@@ -130,7 +130,7 @@ def get_pairs_ranking(limit: int = 20):
 def get_pair_evolution(slug: str):
     """History of points and ranking for charts."""
     res = supabase.table("dynamic_pairs") \
-        .select("snapshot_date, points, rank_change, dominance_ratio") \
+        .select("*") \
         .eq("pair_slug", slug) \
         .order("snapshot_date", desc=False) \
         .execute()
@@ -205,7 +205,7 @@ def get_trending_players():
     target_date = latest.data[0]['snapshot_date']
     
     res = supabase.table("dynamic_players") \
-        .select("player_slug, points_change, race_position, players(name)") \
+        .select("*") \
         .eq("snapshot_date", target_date) \
         .gt("points_change", 0) \
         .order("points_change", desc=True) \
@@ -223,16 +223,16 @@ def global_search(q: str):
     """
     results = []
     
-    p_res = supabase.table("players").select("slug, name").ilike("name", f"%{q}%").limit(3).execute()
+    p_res = supabase.table("players").select("*").ilike("name", f"%{q}%").limit(3).execute()
     for p in p_res.data:
         results.append({"type": "player", "slug": p['slug'], "label": p['name']})
         
-    pair_res = supabase.table("dynamic_pairs").select("pair_slug").ilike("pair_slug", f"%{q}%").limit(3).execute()
+    pair_res = supabase.table("dynamic_pairs").select("*").ilike("pair_slug", f"%{q}%").limit(3).execute()
     for pair in pair_res.data:
         label = pair['pair_slug'].replace("-", " ").title()
         results.append({"type": "pair_slug", "slug": pair['pair_slug'], "label": label})
         
-    t_res = supabase.table("tournaments").select("tournaments_id, full_name").ilike("full_name", f"%{q}%").limit(3).execute()
+    t_res = supabase.table("tournaments").select("*").ilike("full_name", f"%{q}%").limit(3).execute()
     for t in t_res.data:
         results.append({"type": "tournament", "id": str(t['tournaments_id']), "label": t['full_name']})
         
