@@ -76,6 +76,7 @@ def get_players_ranking(limit: int = 50):
     """
     Official player ranking.
     Gets the latest available snapshot and orders by points.
+    Joins with players table to retrieve the player's image URL.
     """
     latest_date_res = supabase.table("dynamic_players") \
         .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
@@ -86,7 +87,7 @@ def get_players_ranking(limit: int = 50):
     latest_date = latest_date_res.data[0]['snapshot_date']
 
     res = supabase.table("dynamic_players") \
-        .select("*") \
+        .select("*, players(*)") \
         .eq("snapshot_date", latest_date) \
         .order("points", desc=True) \
         .limit(limit) \
@@ -111,7 +112,10 @@ def get_player_profile(slug: str):
 
 @app.get("/pairs", tags=["Pairs"])
 def get_pairs_ranking(limit: int = 20):
-    """Ranking of active pairs based on points."""
+    """
+    Ranking of active pairs based on points.
+    Joins with players table to retrieve image URLs for both players.
+    """
     latest_date_res = supabase.table("dynamic_pairs") \
         .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
     
@@ -119,7 +123,7 @@ def get_pairs_ranking(limit: int = 20):
     latest_date = latest_date_res.data[0]['snapshot_date']
 
     res = supabase.table("dynamic_pairs") \
-        .select("*") \
+        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
         .eq("snapshot_date", latest_date) \
         .order("points", desc=True) \
         .limit(limit) \
