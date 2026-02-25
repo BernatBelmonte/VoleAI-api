@@ -228,7 +228,7 @@ def get_pairs_head_to_head(slug1: str, slug2: str):
     latest_date = latest_date_res.data[0]['snapshot_date']
     
     pair1_res = supabase.table("dynamic_pairs") \
-        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
+        .select("*") \
         .eq("pair_slug", slug1) \
         .eq("snapshot_date", latest_date) \
         .execute()
