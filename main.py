@@ -110,6 +110,57 @@ def get_player_profile(slug: str):
         "current_stats": stats_res.data[0] if stats_res.data else None
     }
 
+@app.get("/players/{slug}/evolution", tags=["Players"])
+def get_player_evolution(slug: str):
+    """History of points and ranking evolution for a player."""
+    player_res = supabase.table("players").select("slug").eq("slug", slug).execute()
+    if not player_res.data:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    res = supabase.table("dynamic_players") \
+        .select("*") \
+        .eq("slug", slug) \
+        .order("snapshot_date", desc=False) \
+        .execute()
+    return res.data
+
+@app.get("/players/headtohead/{player1}/{player2}", tags=["Players"])
+def get_players_head_to_head(player1: str, player2: str):
+    """
+    Compare two individual players using their dynamic stats.
+    Returns the latest stats for both players for comparison.
+    """
+    latest_date_res = supabase.table("dynamic_players") \
+        .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
+    
+    if not latest_date_res.data:
+        raise HTTPException(status_code=404, detail="No stats data available")
+    
+    latest_date = latest_date_res.data[0]['snapshot_date']
+    
+    player1_res = supabase.table("dynamic_players") \
+        .select("*, players(*)") \
+        .eq("slug", player1) \
+        .eq("snapshot_date", latest_date) \
+        .execute()
+    
+    player2_res = supabase.table("dynamic_players") \
+        .select("*, players(*)") \
+        .eq("slug", player2) \
+        .eq("snapshot_date", latest_date) \
+        .execute()
+    
+    if not player1_res.data:
+        raise HTTPException(status_code=404, detail=f"Player '{player1}' not found")
+    if not player2_res.data:
+        raise HTTPException(status_code=404, detail=f"Player '{player2}' not found")
+    
+    return {
+        "snapshot_date": latest_date,
+        "player1": player1_res.data[0],
+        "player2": player2_res.data[0]
+    }
+
 @app.get("/pairs", tags=["Pairs"])
 def get_pairs_ranking(limit: int = 20):
     """
@@ -130,6 +181,28 @@ def get_pairs_ranking(limit: int = 20):
         .execute()
     return res.data
 
+@app.get("/pairs/{slug:path}", tags=["Pairs"])
+def get_pair_profile(slug: str):
+    """Get a specific pair by slug with current stats."""
+    latest_date_res = supabase.table("dynamic_pairs") \
+        .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
+    
+    if not latest_date_res.data:
+        raise HTTPException(status_code=404, detail="No pairs data available")
+    
+    latest_date = latest_date_res.data[0]['snapshot_date']
+    
+    res = supabase.table("dynamic_pairs") \
+        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
+        .eq("pair_slug", slug) \
+        .eq("snapshot_date", latest_date) \
+        .execute()
+    
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Pair not found")
+    
+    return res.data[0]
+
 @app.get("/pairs/{slug:path}/evolution", tags=["Pairs"])
 def get_pair_evolution(slug: str):
     """History of points and ranking for charts."""
@@ -139,6 +212,43 @@ def get_pair_evolution(slug: str):
         .order("snapshot_date", desc=False) \
         .execute()
     return res.data
+
+@app.get("/pairs/head-to-head/{slug1:path}/{slug2:path}", tags=["Pairs"])
+def get_pairs_head_to_head(slug1: str, slug2: str):
+    """
+    Compare two pairs using their dynamic stats.
+    Returns the latest stats for both pairs for comparison.
+    """
+    latest_date_res = supabase.table("dynamic_pairs") \
+        .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
+    
+    if not latest_date_res.data:
+        raise HTTPException(status_code=404, detail="No pairs data available")
+    
+    latest_date = latest_date_res.data[0]['snapshot_date']
+    
+    pair1_res = supabase.table("dynamic_pairs") \
+        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
+        .eq("pair_slug", slug1) \
+        .eq("snapshot_date", latest_date) \
+        .execute()
+    
+    pair2_res = supabase.table("dynamic_pairs") \
+        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
+        .eq("pair_slug", slug2) \
+        .eq("snapshot_date", latest_date) \
+        .execute()
+    
+    if not pair1_res.data:
+        raise HTTPException(status_code=404, detail=f"Pair '{slug1}' not found")
+    if not pair2_res.data:
+        raise HTTPException(status_code=404, detail=f"Pair '{slug2}' not found")
+    
+    return {
+        "snapshot_date": latest_date,
+        "pair1": pair1_res.data[0],
+        "pair2": pair2_res.data[0]
+    }
 
 @app.get("/matches", tags=["Matches"])
 def get_matches(limit: int = 20, tournament_id: Optional[int] = None, date_from: Optional[date] = None):
@@ -153,13 +263,13 @@ def get_matches(limit: int = 20, tournament_id: Optional[int] = None, date_from:
     res = query.limit(limit).execute()
     return res.data
 
-@app.get("/matches/head-to-head", tags=["Matches"])
-def get_head_to_head(team1: str, team2: str):
+@app.get("/matches/{pair1:path}/{pair2:path}", tags=["Matches"])
+def get_matches_head_to_head(pair1: str, pair2: str):
     """
-    Compare two pairs/teams.
+    Compare two pairs/teams match history.
     Returns all matches where they have played against each other.
     """
-    slugs = f"({team1},{team2})"
+    slugs = f"({pair1},{pair2})"
     
     res = supabase.table("matches") \
         .select("*") \
@@ -169,20 +279,20 @@ def get_head_to_head(team1: str, team2: str):
         .execute()
 
     matches = res.data
-    wins_team1 = 0
-    wins_team2 = 0
+    wins_pair1 = 0
+    wins_pair2 = 0
     for m in matches:
-        is_t1_home = m['team1_slug'] == team1
+        is_p1_home = m['team1_slug'] == pair1
         
-        if is_t1_home:
-            if m['winner_team'] == 1: wins_team1 += 1
-            else: wins_team2 += 1
+        if is_p1_home:
+            if m['winner_team'] == 1: wins_pair1 += 1
+            else: wins_pair2 += 1
         else:
-            if m['winner_team'] == 2: wins_team1 += 1
-            else: wins_team2 += 1
+            if m['winner_team'] == 2: wins_pair1 += 1
+            else: wins_pair2 += 1
 
     return {
-        "summary": {team1: wins_team1, team2: wins_team2, "total_matches": len(matches)},
+        "summary": {pair1: wins_pair1, pair2: wins_pair2, "total_matches": len(matches)},
         "history": matches
     }
 
