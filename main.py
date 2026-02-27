@@ -197,7 +197,7 @@ def get_pair_profile(slug: str):
     
     return res.data[0]
 
-@app.get("/pairs/{slug:path}/evolution", tags=["Pairs"])
+@app.get("/pairs/{slug}/evolution", tags=["Pairs"])
 def get_pair_evolution(slug: str):
     """History of points and ranking for charts."""
     res = supabase.table("dynamic_pairs") \
@@ -207,7 +207,7 @@ def get_pair_evolution(slug: str):
         .execute()
     return res.data
 
-@app.get("/pairs/head-to-head/{slug1}---{slug2}", tags=["Pairs"])
+@app.get("/pairs/head-to-head/{slug1}/{slug2}", tags=["Pairs"])
 def get_pairs_head_to_head(slug1: str, slug2: str):
     """
     Compare two pairs using their dynamic stats.
@@ -221,7 +221,7 @@ def get_pairs_head_to_head(slug1: str, slug2: str):
         .execute()
     
     pair2_res = supabase.table("dynamic_pairs") \
-        .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
+        .select("*") \
         .eq("pair_slug", slug2) \
         .order("snapshot_date", desc=True) \
         .limit(1) \
