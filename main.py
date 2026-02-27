@@ -130,24 +130,19 @@ def get_players_head_to_head(player1: str, player2: str):
     Compare two individual players using their dynamic stats.
     Returns the latest stats for both players for comparison.
     """
-    latest_date_res = supabase.table("dynamic_players") \
-        .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
-    
-    if not latest_date_res.data:
-        raise HTTPException(status_code=404, detail="No stats data available")
-    
-    latest_date = latest_date_res.data[0]['snapshot_date']
     
     player1_res = supabase.table("dynamic_players") \
         .select("*, players(*)") \
         .eq("slug", player1) \
-        .eq("snapshot_date", latest_date) \
+        .order("snapshot_date", desc=True) \
+        .limit(1) \
         .execute()
     
     player2_res = supabase.table("dynamic_players") \
         .select("*, players(*)") \
         .eq("slug", player2) \
-        .eq("snapshot_date", latest_date) \
+        .order("snapshot_date", desc=True) \
+        .limit(1) \
         .execute()
     
     if not player1_res.data:
@@ -156,7 +151,6 @@ def get_players_head_to_head(player1: str, player2: str):
         raise HTTPException(status_code=404, detail=f"Player '{player2}' not found")
     
     return {
-        "snapshot_date": latest_date,
         "player1": player1_res.data[0],
         "player2": player2_res.data[0]
     }
@@ -213,30 +207,24 @@ def get_pair_evolution(slug: str):
         .execute()
     return res.data
 
-@app.get("/pairs/head-to-head/{slug1:path}/{slug2:path}", tags=["Pairs"])
+@app.get("/pairs/head-to-head/{slug1}---{slug2}", tags=["Pairs"])
 def get_pairs_head_to_head(slug1: str, slug2: str):
     """
     Compare two pairs using their dynamic stats.
     Returns the latest stats for both pairs for comparison.
     """
-    latest_date_res = supabase.table("dynamic_pairs") \
-        .select("snapshot_date").order("snapshot_date", desc=True).limit(1).execute()
-    
-    if not latest_date_res.data:
-        raise HTTPException(status_code=404, detail="No pairs data available")
-    
-    latest_date = latest_date_res.data[0]['snapshot_date']
-    
     pair1_res = supabase.table("dynamic_pairs") \
         .select("*") \
         .eq("pair_slug", slug1) \
-        .eq("snapshot_date", latest_date) \
+        .order("snapshot_date", desc=True) \
+        .limit(1) \
         .execute()
     
     pair2_res = supabase.table("dynamic_pairs") \
         .select("*, player1:players!player1_slug(*), player2:players!player2_slug(*)") \
         .eq("pair_slug", slug2) \
-        .eq("snapshot_date", latest_date) \
+        .order("snapshot_date", desc=True) \
+        .limit(1) \
         .execute()
     
     if not pair1_res.data:
@@ -245,7 +233,6 @@ def get_pairs_head_to_head(slug1: str, slug2: str):
         raise HTTPException(status_code=404, detail=f"Pair '{slug2}' not found")
     
     return {
-        "snapshot_date": latest_date,
         "pair1": pair1_res.data[0],
         "pair2": pair2_res.data[0]
     }
