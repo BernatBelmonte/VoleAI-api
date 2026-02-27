@@ -207,11 +207,10 @@ def get_pair_evolution(slug: str):
         .execute()
     return res.data
 
-@app.get("/pairs/head-to-head/{slug1}/{slug2}", tags=["Pairs"])
-def get_pairs_head_to_head(slug1: str, slug2: str):
+@app.get("/pairs/head-to-head", tags=["Pairs"])
+def get_pairs_head_to_head(slug1: str = Query(...), slug2: str = Query(...)):
     """
     Compare two pairs using their dynamic stats.
-    Returns the latest stats for both pairs for comparison.
     """
     pair1_res = supabase.table("dynamic_pairs") \
         .select("*") \
